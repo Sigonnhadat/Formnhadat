@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CORS Proxy</title>
+</head>
+<body>
+    <div id="status">CORS Proxy Ready</div>
+    <script>
+        window.addEventListener('message', async function(event) {
+            const statusDiv = document.getElementById('status');
+            try {
+                statusDiv.textContent = 'Processing request...';
+                
+                // Validate origin
+                if (!event.origin.includes('127.0.0.1') && 
+                    !event.origin.includes('localhost') && 
+                    !event.origin.includes('your-domain.com')) { // Thay your-domain.com bằng domain của bạn
+                    throw new Error('Invalid origin');
+                }
+
+                // Gửi request đến Google Apps Script
+                const response = await fetch(event.data.url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(event.data.payload)
+                });
+                
+                const result = await response.json();
+                
+                // Gửi kết quả về trang chính
+                event.source.postMessage({
+                    type: 'form-response',
+                    success: true,
+                    data: result
+                }, event.origin);
+                
+                statusDiv.textContent = 'Request completed successfully';
+                
+            } catch (error) {
+                statusDiv.textContent = 'Error: ' + error.message;
+                
+                // Gửi lỗi về trang chính
+                event.source.postMessage({
+                    type: 'form-response',
+                    success: false,
+                    error: error.message
+                }, event.origin);
+            }
+        });
+    </script>
+</body>
+</html>
